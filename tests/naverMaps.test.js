@@ -10,7 +10,7 @@ test('국내 도시 3곳 관광지 검색',()=>{
 });
 test('국내 경로 도구 인수 검증',()=>{
  assert.equal(validPair('seoul','s1','s2').from.name,'경복궁');
- assert.throws(()=>validPair('tokyo','t1','t2'));
+ assert.throws(()=>validPair('unknown','x1','x2'));
  assert.throws(()=>validPair('seoul','s1','b1'));
  assert.throws(()=>validPair('seoul','s1','s1'));
 });

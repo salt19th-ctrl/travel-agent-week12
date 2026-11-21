@@ -1,136 +1,83 @@
-# TravelLoop — 12주차 AI 여행 Agent 실습
+# TravelLoop Korea — 국내 여행 AI Agent (12주차 실습 확장판)
 
-수업자료 「일반 여행 앱 vs. AI Agent 기반 여행 앱」에 제시된 **목표 → 도구 선택 → 실행 → 관찰 → 재판단** 구조를 구현하는 Next.js 웹앱입니다.
+기존 TravelLoop의 **OpenAI Responses API 기반 Agent Loop**와 **NAVER Cloud Maps** 연동을 유지하면서
+해외 목적지·출발 공항 입력·해외 항공료 가정을 제거한 **국내 여행 전용 수정본**입니다.
 
-## 제출 가능한 결과물
+## 핵심 기능
 
-- 도시(도쿄·오사카·후쿠오카), 일수, 인원, 예산, 취향 입력
-- OpenAI Responses API Function Calling으로 `search_places`와 `estimate_budget` 호출
-- 모델 요청 → 서버 도구 실제 실행 → 결과 반환 → 최종 일정 생성의 Agent Loop
-- `비가 온다` 등 조건 변경 시 장소 재검색을 할 수 있도록 설계
-- 일정별 카드와 예산 추정, 실제 도구 호출 로그 표시, 브라우저에서 인쇄/PDF 저장
-- **데모 모드:** AI 키 없이 화면과 기능을 시연할 수 있으나, 실제 Agent 기능 검증은 아님
+- 여행지: **서울, 부산, 제주**만 지원 (해외 목적지는 클라이언트와 서버 양쪽에서 차단)
+- 출발일, 기간 2~6일, 인원 1~8명, 예산, 취향, 추가 요청 입력
+- OpenAI AI Agent가 `search_places`, `estimate_budget`, `get_driving_route` 도구를 상황에 맞게 호출
+- 도시별 정적 참고 장소: 서울 10곳, 부산 10곳, 제주 8곳 (실시간 관광지 검색이 아님)
+- NAVER Cloud Maps **Dynamic Map / Geocoding / Directions 5**를 이용한 실제 자동차 경로
+- 일정 카드, 조건을 변경한 재계획, 도구 호출 이력, 인쇄/PDF 저장, 키 없이 보는 데모 모드
 
-### 중요한 한계
+### 데이터 한계와 예산 계산
 
-관광지 데이터는 학습용으로 수동 작성한 목록입니다. 항공권·호텔 실제 가격, 운영시간, 예약 가능 여부, 실시간 날씨, 이동거리, 지도 경로는 조회하지 않습니다. 예산은 명시적인 **가상 단가**입니다. 예약/결제 기능도 없습니다.
+- `search_places`: 수동으로 준비한 국내 관광지 목록입니다. 운영시간·매진 여부를 실시간 조회하지 않습니다.
+- `estimate_budget`: **숙박·식비·현지 교통·관광 활동을 가정 단가로 계산**합니다.
+- **출발지에서 목적지까지의 왕복 교통비(항공·기차·버스·자가용 등)는 포함하지 않습니다.** 제주 항공권 실시간 가격도 조회하지 않습니다.
+- `get_driving_route`: NAVER Maps에서 받은 실제 **자동차** 경로만 표시합니다. 도보·대중교통 소요시간은 제공하지 않습니다.
+- 장소·주소 데이터는 샘플이며 실제 영업 여부와 주소 변경 가능성을 사용자가 확인해야 합니다.
+- 데모 모드에서는 OpenAI를 호출하지 않습니다. 여행지 데이터보다 일정 슬롯이 많으면 나머지를 '자유 일정'으로 보여줍니다.
 
-## 1. Mac + VS Code에서 실행
+## 1. 기존 프로젝트에 반영하는 방법 (Mac / VS Code)
 
-1. 압축을 해제하고 `travel-agent-week12` 폴더를 VS Code로 엽니다.
-2. VS Code 터미널에서 실행:
-
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
-```
-
-3. 브라우저에서 `http://localhost:3000` 접속합니다.
-4. 처음에는 **무료 데모 모드**로 화면·흐름을 확인합니다.
-5. **실제 AI Agent 기능**을 테스트하려면 `.env.local`의 `OPENAI_API_KEY=` 뒤에 본인의 API 키를 입력하고 개발 서버를 재시작합니다. API 사용 요금이 발생할 수 있습니다.
-6. 실제 AI 모드에서 도구 호출 로그가 `실제 함수 실행`으로 나타나는지 확인합니다.
-
-**주의:** `.env.local`에 실제 키를 넣어도 GitHub에는 업로드하지 마세요. `.gitignore`에 제외해 두었습니다.
-
-## 2. GitHub에 올리기
-
-GitHub에서 비어 있는 새 저장소 `travel-agent-week12`를 생성합니다. VS Code 터미널에서 이 폴더를 기준으로:
-
-```bash
-git init
-git add .
-git commit -m "Add week12 travel agent app"
-git branch -M main
-git remote add origin https://github.com/내-아이디/travel-agent-week12.git
-git push -u origin main
-```
-
-`내-아이디`는 실제 GitHub 사용자 ID로 변경합니다. Git 인증이나 중복 저장소 오류가 나오면 기존 저장소 설정을 확인하세요.
-
-## 3. Vercel에 배포
-
-1. https://vercel.com/new 접속 후 GitHub 연동, `travel-agent-week12` 저장소 Import.
-2. Framework Preset은 **Next.js**, Root Directory는 프로젝트 루트를 선택합니다.
-3. Environment Variables에 `OPENAI_API_KEY`와 필요시 `OPENAI_MODEL`을 추가합니다. 실제 값은 README나 GitHub 파일에 적지 않습니다.
-4. Deploy 클릭 후 배포가 `Ready`가 될 때까지 확인합니다.
-5. Vercel이 표시한 `https://...vercel.app` URL에서 직접 AI 모드로 장소 조회·일정 생성 테스트를 수행합니다.
-6. `https://배포주소/api/health`에서 `aiReady:true`가 확인되면 API 키 설정은 되어 있는 상태입니다. **실제 호출 성공 여부는 AI 모드에서 별도 확인**해야 합니다.
-7. 문제 없으면 배포 URL을 수업 제출란에 붙여넣습니다.
-
-> Vercel에서 환경변수를 나중에 추가/수정했다면 변경을 반영한 새 배포가 필요할 수 있습니다.
-
-## 4. 교수님에게 설명할 핵심 내용
-
-- **Goal:** 여행지·기간·예산·취향에 맞는 초안 제작
-- **Decision:** LLM이 필요한 장소 검색, 예산 도구를 선택
-- **Action:** Node.js 서버가 실제 함수 실행
-- **Observation:** 모델이 도구 반환값을 받은 뒤 일정 작성
-- **Iteration:** 비 또는 관심사 변경 시 재검색 요청 가능
-- **Human Control:** 실제 예약·결제는 수행하지 않음
-
-## 5. 점검 목록
-
-- [ ] 데모 모드에서 도시 선택·날짜·인원·예산·일정 카드 정상 표시
-- [ ] AI 모드에서 OpenAI API 연결 성공
-- [ ] `search_places`와 `estimate_budget` 함수 호출 기록 확인
-- [ ] `비가 온다면 실내 중심으로 바꿔줘` 등 후속 요청 테스트
-- [ ] `npm run test` 통과
-- [ ] 배포 URL에서 테스트 (로컬 화면으로 대신하지 않기)
-- [ ] API 키·개인정보 저장소 업로드되지 않았는지 확인
-- [ ] 실제 숙박·항공권 요금 조회 아님을 화면에서 알 수 있음
-
-## 6. 강의 내용과의 관계
-
-실습 근거: `참고. 일반 여행앱 vs. AI agent 기반 여행 앱.html` 및 `Week12. AI Agent 강의내용.html`. 자료의 여행 사례는 **개념 비교**이며 코드·정확한 과제 규격이 제시된 완성 프로젝트가 아니므로, 이 프로젝트는 개념에 맞게 자체 구성한 구현 예시입니다.
-
-
-## 7. 12주차 추가 실습: 신규 NAVER Cloud Maps 지도 연동
-
-- 기존 일본 여행지는 유지하면서 서울·부산·제주 여행지를 추가했습니다.
-- 국내 관광지 검색은 실습용 장소 데이터, 경로는 네이버 서버의 실제 Directions 5 결과를 사용합니다.
-- 지도 표시: `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=...`
-- 주소→좌표: `https://maps.apigw.ntruss.com/map-geocode/v2/geocode`
-- 자동차 경로: `https://maps.apigw.ntruss.com/map-direction/v1/driving`
-- 인증 헤더: `x-ncp-apigw-api-key-id` (Client ID), `x-ncp-apigw-api-key` (Client Secret)
-- 네이버 콘솔에서 **Application Services → Maps**의 `Dynamic Map`, `Geocoding`, `Directions 5`를 신청해야 합니다.
-- 서비스 URL은 `https://travel-agent-week12.vercel.app`를 등록합니다. 다른 도메인에서 열 경우 해당 도메인도 등록해야 합니다.
-
-### Vercel 환경변수 (Production)
-
-```dotenv
-NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID=신규_Client_ID
-NAVER_MAPS_CLIENT_ID=신규_Client_ID
-NAVER_MAPS_CLIENT_SECRET=신규_Client_Secret
-OPENAI_API_KEY=OpenAI_키
-```
-
-- 새 코드에는 구형 `NAVER_LEGACY_...` 환경변수를 사용하지 않습니다. 신규 지도 성공을 확인한 뒤 구형 키를 삭제하세요.
-- 새 환경변수 등록 후 GitHub 코드 업데이트와 Vercel 새 배포가 필요합니다.
-- 지도 API 호출은 사용자 브라우저가 아닌 Next.js 서버에서 수행하며, Secret은 공개되면 안 됩니다.
-- **지도 조회 검증:** 국내 도시 선택 → AI 여행 계획 생성 → `네이버지도 실제 경로 조회` 버튼 → 경로 시간/거리와 지도 표시.
-- **Agent 검증:** 국내 여행 계획을 AI 모드로 만들고 `get_driving_route`가 `실제 함수 실행`인지 로그에서 확인.
-- API 호출 실패 때는 이전/추정 시간으로 대체하지 않습니다.
-- 가격·영업시간·숙소·항공권·관광지 정보는 여전히 실시간 API가 아니라 실습용 값이거나 미조회입니다.
-- Directions 5는 자동차 기준이며 대중교통/도보 경로가 아닙니다.
-
-### 배포 전 점검
+1. 수정본 ZIP을 압축 해제합니다.
+2. **GitHub와 이미 연결된 기존 TravelLoop 프로젝트 폴더**를 VS Code에서 엽니다.
+3. 수정본 폴더 `travel-agent-week12`의 **내용물**을 기존 프로젝트에 복사해 덮어씁니다. **`.git` 폴더와 `.env.local`은 유지합니다.**
+4. 로컬 프로젝트 폴더에서 다음 명령을 실행합니다.
 
 ```bash
 npm install
 npm test
 npm run build
+npm run dev
+```
+
+5. `http://localhost:3000`에서 국내 도시 선택·AI/데모 모드·자동차 경로 표시를 확인합니다.
+6. 변경 파일을 GitHub에 반영합니다.
+
+```bash
 git status
-git add .
-git commit -m "Switch TravelLoop to new NAVER Maps API"
+git add -A
+git status
+git commit -m "Make TravelLoop Korea-only"
 git push
 ```
 
-기존 저장소 폴더를 열고 수정본 파일을 **그 폴더 안으로 복사**합니다. `.git`과 `.env.local`을 보존하고, `git status`에서 키 파일이 추적되지 않는지 확인하세요.
-Vercel에서 Production 환경변수 등록 후 최신 배포가 새 커밋을 사용하도록 배포하세요.
+`git status`에 `.env.local`이나 API 키 파일이 포함되지 않아야 합니다.
 
-공식 문서:
-- https://api.ncloud-docs.com/docs/application-maps-overview
-- https://api.ncloud-docs.com/docs/application-maps-directions5
-- https://api.ncloud-docs.com/docs/application-maps-geocoding
-- https://guide.ncloud-docs.com/docs/application-maps-troubleshoot
+## 2. Vercel 환경변수 (Production)
+
+기존에 등록한 아래 **신규 NAVER Maps** 변수와 OpenAI 키를 **그대로 사용**합니다. 다시 발급할 필요가 없습니다.
+
+```dotenv
+OPENAI_API_KEY=기존_실제_키
+NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID=신규_Maps_Client_ID
+NAVER_MAPS_CLIENT_ID=신규_Maps_Client_ID
+NAVER_MAPS_CLIENT_SECRET=신규_Maps_Client_Secret
+```
+
+- Client Secret은 서버 전용이며 GitHub에 업로드하면 안 됩니다.
+- **기존 배포 도메인:** https://travel-agent-week12-4v9u.vercel.app/
+- 위 주소는 **이 수정본의 신규 배포 성공이 검증되기 전에는 기존 앱의 주소**입니다. GitHub Push 뒤 Vercel **Deployments**가 `Ready`이고 실제 URL에서 국내 도시만 나오는지 확인하세요.
+- Vercel의 도메인을 바꿀 경우 NAVER Cloud Maps 콘솔 `Web 서비스 URL`에도 등록해야 지도가 보입니다.
+- 구형 `NAVER_LEGACY` 변수는 현 코드에서 사용하지 않습니다. 신규 지도 정상 작동을 확인한 뒤 삭제해도 됩니다.
+
+## 3. 최종 점검
+
+- [ ] 도시 선택에 서울·부산·제주만 보이는지
+- [ ] 시작 화면의 `KOREA TRIP` 표시와 `출발 공항` 필드 제거 여부
+- [ ] 데모 모드에서 국내 일정을 생성하고 외국 도시·'귀국편' 문구가 안 나오는지
+- [ ] AI 모드에서 실제 `search_places`·`estimate_budget` 호출 로그가 있는지
+- [ ] `get_driving_route`가 실제 실행된 경우에만 자동차 이동 시간 표시하는지
+- [ ] '네이버지도 실제 경로 조회' 후 지도와 경로가 보이는지
+- [ ] 예상 예산에 여행지까지 왕복 교통비가 포함되지 않았다는 안내가 있는지
+- [ ] `npm test`와 `npm run build`가 통과했는지
+- [ ] Vercel에서 새 배포가 `Ready`이며 수정된 페이지가 보이는지
+
+## 기술 개요
+
+Next.js / React / Node.js, OpenAI Responses API Function Calling, NAVER Cloud Maps Dynamic Map·Geocoding·Directions 5.
+일반 LLM 요약과 구별해 실제 도구 실행·결과 평가를 표시합니다. 단 실제 관광지 검색 API나 예약 API를 갖춘 상용 여행 에이전트는 아닙니다.
