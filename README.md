@@ -83,3 +83,54 @@ git push -u origin main
 ## 6. 강의 내용과의 관계
 
 실습 근거: `참고. 일반 여행앱 vs. AI agent 기반 여행 앱.html` 및 `Week12. AI Agent 강의내용.html`. 자료의 여행 사례는 **개념 비교**이며 코드·정확한 과제 규격이 제시된 완성 프로젝트가 아니므로, 이 프로젝트는 개념에 맞게 자체 구성한 구현 예시입니다.
+
+
+## 7. 12주차 추가 실습: 기존 AI·NAVER API 지도 연동 (구형)
+
+**중요:** 네이버 공식 공지에 따라 이 서비스는 **2026-11-24(화) 18:00 KST 종료 예정**입니다.
+배포와 API 키 등록 및 실제 작동 테스트를 그 이전에 완료하세요. 이후에는 신규 Maps로 전환해야 합니다.
+
+### 네이버 클라우드 설정
+
+1. 네이버 클라우드 콘솔에서 `AI·NAVER API > Application`으로 이동합니다.
+2. 기존 애플리케이션을 사용하거나, 신규 등록이 가능하다면 `TravelLoop`를 등록합니다.
+3. `Web Dynamic Map`, `Directions 5`, `Geocoding`을 선택합니다.
+4. Web 서비스 URL에 `https://travel-agent-week12.vercel.app`, 로컬용 `http://localhost`를 등록합니다(경로/포트 제외).
+5. 발급된 Client ID/Secret을 `.env.local`에 저장합니다. 지도 표시용 공개 ID와 서버 ID는 같은 값입니다.
+
+```dotenv
+OPENAI_API_KEY=본인의_키
+NEXT_PUBLIC_NAVER_LEGACY_CLIENT_ID=기존_클라이언트_ID
+NAVER_LEGACY_CLIENT_ID=기존_클라이언트_ID
+NAVER_LEGACY_CLIENT_SECRET=기존_클라이언트_Secret
+```
+
+**중요:** Secret을 `NEXT_PUBLIC_` 변수에 넣지 마세요. 키를 GitHub나 제출 문서에 기재하지 마세요.
+
+### 적용한 기술
+
+- 웹 지도 SDK: `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=...`
+- 주소→좌표: `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode`
+- 자동차 경로: `https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving`
+- REST API 요청은 Next.js 서버에서만 수행합니다.
+- Agent `get_driving_route` 도구는 검증된 국내 관광지 ID 2개만 받아 API를 호출합니다.
+- 화면의 `네이버지도 실제 경로 조회` 버튼은 **첫날 오전·오후** 장소를 실제 조회해 지도/거리/시간으로 표시합니다.
+- 네이버 API 미설정/실패/서비스 종료 후에도 국내 관광지 데이터와 데모 일정은 이용할 수 있지만 지도 경로 기능은 실패로 표시됩니다.
+- 해외 관광지 지도는 제공하지 않습니다.
+- 네이버 지도 Directions 5는 **자동차 이동 기준**이며, 대중교통/도보 이동시간은 제공하지 않습니다.
+
+### Vercel 배포
+
+1. 위 3개 `NAVER...` 환경변수에 실제 값을 입력합니다(Production).
+2. GitHub에 수정 파일을 푸시합니다. 환경변수 신규 등록은 재배포해야 적용됩니다.
+3. 국내 도시를 선택해 AI 모드로 계획을 생성합니다. OpenAI API 키가 없으면 데모 모드로 화면부터 테스트합니다.
+4. 국내 여행 일정을 생성한 뒤 `네이버지도 실제 경로 조회`를 누릅니다. 지도와 실제 거리·시간이 나오는지 확인합니다.
+5. AI 모드 도구 실행 로그의 `get_driving_route`가 성공한 경우에만 Agent의 외부 API 사용 성공을 입증할 수 있습니다. 버튼으로 호출한 경로는 별도 수동 검증 기능입니다.
+
+공식 참고: https://www.ncloud.com/support/notice/all/2200
+
+### 주의
+
+- 이번 실습에 들어간 관광지의 주소는 테스트 입력값이며, Geocoding 응답이 없으면 실제 지도를 표시하지 않습니다.
+- 실제 이동거리는 Directions 5 성공 응답에서만 표시합니다.
+- 지도 API 조회 비용이 발생할 수 있으니 사용량 한도를 설정하세요.
