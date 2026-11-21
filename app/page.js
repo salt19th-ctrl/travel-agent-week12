@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import LegacyNaverMap from '../components/LegacyNaverMap.js';
+import NaverMap from '../components/NaverMap.js';
 const cities=[{key:'tokyo',label:'도쿄',short:'Tokyo'},{key:'osaka',label:'오사카',short:'Osaka'},{key:'fukuoka',label:'후쿠오카',short:'Fukuoka'},{key:'seoul',label:'서울',short:'Seoul'},{key:'busan',label:'부산',short:'Busan'},{key:'jeju',label:'제주',short:'Jeju'}];
 const topics=['맛집','쇼핑','문화','산책','전시','사진'];
 const INITIAL={city:'tokyo',startDate:'2026-12-10',departAirport:'인천',days:4,travelers:2,budgetPerPerson:1000000,pace:'여유롭게',interests:['맛집','쇼핑'],refine:'',previousSummary:''};
@@ -48,7 +48,7 @@ export default function Home(){
   <section id="results" className="results">{plan? <><div className="resultsHeader"><div><span className="eyebrow">YOUR TRIP PLAN</span><h2>{plan.title}</h2><p>{plan.summary}</p></div><span className={'modeBadge '+(plan.mode==='demo'?'demo':'real')}>{plan.mode==='demo'?'데모 · 비AI':'AI Agent 실행'}</span></div>
    {budget&&<div className="budgetBar"><div><small>1인당 예산</small><strong>{won(budget.budgetPerPerson)}</strong></div><div><small>예시 지출 추정</small><strong>{won(budget.estimatedPerPerson)}</strong></div><div><small>예산 차이</small><strong>{budget.difference>=0?'+':''}{won(budget.difference)}</strong></div></div>}
    <div className="daysGrid">{plan.days.map((day,i)=><article key={i} className="dayCard"><div className="dayLabel">DAY {String(day.day).padStart(2,'0')}<span>{day.label}</span></div>{slots.map(([key,label,n])=>{const p=day[key];return <div className="place" key={key}><span className="slot">{label}</span><div><b>{p?.name||'장소 미정'}</b><small>{p?.district||''}</small><p>{p?.summary||''}</p></div></div>})}<div className="dayTip">{day.tip}</div></article>)}</div>
-   {domestic&&<section className="mapsSection"><h3>네이버지도 자동차 경로 (첫날 오전 → 오후)</h3><p className="help">기존 AI·NAVER API 지도 서비스를 실제 호출합니다. 도보·대중교통 경로가 아닌 자동차 이동 기준이며, API 종료 후에는 작동하지 않습니다.</p><button type="button" className="printButton" disabled={driveBusy} onClick={showRoute}>{driveBusy?'실제 경로 조회 중…':'네이버지도 실제 경로 조회'}</button>{driveError&&<p className="error">{driveError}</p>}{drive&&<><p><b>{drive.from.name} → {drive.to.name}: {drive.distanceKm}km / 약 {drive.durationMinutes}분 (자동차)</b></p><LegacyNaverMap route={drive}/><p className="help">출처: {drive.source} · 실제 API 조회 성공</p></>}</section>}
+   {domestic&&<section className="mapsSection"><h3>네이버지도 자동차 경로 (첫날 오전 → 오후)</h3><p className="help">신규 NAVER Cloud Maps API로 실제 자동차 경로를 조회합니다. 도보·대중교통 이동시간은 제공하지 않습니다.</p><button type="button" className="printButton" disabled={driveBusy} onClick={showRoute}>{driveBusy?'실제 경로 조회 중…':'네이버지도 실제 경로 조회'}</button>{driveError&&<p className="error">{driveError}</p>}{drive&&<><p><b>{drive.from.name} → {drive.to.name}: {drive.distanceKm}km / 약 {drive.durationMinutes}분 (자동차)</b></p><NaverMap route={drive}/><p className="help">출처: {drive.source} · 실제 API 조회 성공</p></>}</section>}
    <div className="trace"><h3>도구 실행 기록</h3>{plan.trace?.map((t,i)=><div key={i}><code>{t.tool}</code><span>{t.status}</span><small>{t.info}</small></div>)}</div>
    <p className="disclaimer">{plan.disclaimer}</p><button className="printButton" onClick={()=>window.print()}>일정 인쇄 / PDF 저장</button>
   </>:<div className="empty"><span>✦</span><h3>아직 생성된 일정이 없습니다.</h3><p>왼쪽에서 여행 조건을 입력하고 일정을 만들어 보세요.</p></div>}</section>

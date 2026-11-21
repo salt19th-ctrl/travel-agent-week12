@@ -85,52 +85,52 @@ git push -u origin main
 실습 근거: `참고. 일반 여행앱 vs. AI agent 기반 여행 앱.html` 및 `Week12. AI Agent 강의내용.html`. 자료의 여행 사례는 **개념 비교**이며 코드·정확한 과제 규격이 제시된 완성 프로젝트가 아니므로, 이 프로젝트는 개념에 맞게 자체 구성한 구현 예시입니다.
 
 
-## 7. 12주차 추가 실습: 기존 AI·NAVER API 지도 연동 (구형)
+## 7. 12주차 추가 실습: 신규 NAVER Cloud Maps 지도 연동
 
-**중요:** 네이버 공식 공지에 따라 이 서비스는 **2026-11-24(화) 18:00 KST 종료 예정**입니다.
-배포와 API 키 등록 및 실제 작동 테스트를 그 이전에 완료하세요. 이후에는 신규 Maps로 전환해야 합니다.
+- 기존 일본 여행지는 유지하면서 서울·부산·제주 여행지를 추가했습니다.
+- 국내 관광지 검색은 실습용 장소 데이터, 경로는 네이버 서버의 실제 Directions 5 결과를 사용합니다.
+- 지도 표시: `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=...`
+- 주소→좌표: `https://maps.apigw.ntruss.com/map-geocode/v2/geocode`
+- 자동차 경로: `https://maps.apigw.ntruss.com/map-direction/v1/driving`
+- 인증 헤더: `x-ncp-apigw-api-key-id` (Client ID), `x-ncp-apigw-api-key` (Client Secret)
+- 네이버 콘솔에서 **Application Services → Maps**의 `Dynamic Map`, `Geocoding`, `Directions 5`를 신청해야 합니다.
+- 서비스 URL은 `https://travel-agent-week12.vercel.app`를 등록합니다. 다른 도메인에서 열 경우 해당 도메인도 등록해야 합니다.
 
-### 네이버 클라우드 설정
-
-1. 네이버 클라우드 콘솔에서 `AI·NAVER API > Application`으로 이동합니다.
-2. 기존 애플리케이션을 사용하거나, 신규 등록이 가능하다면 `TravelLoop`를 등록합니다.
-3. `Web Dynamic Map`, `Directions 5`, `Geocoding`을 선택합니다.
-4. Web 서비스 URL에 `https://travel-agent-week12.vercel.app`, 로컬용 `http://localhost`를 등록합니다(경로/포트 제외).
-5. 발급된 Client ID/Secret을 `.env.local`에 저장합니다. 지도 표시용 공개 ID와 서버 ID는 같은 값입니다.
+### Vercel 환경변수 (Production)
 
 ```dotenv
-OPENAI_API_KEY=본인의_키
-NEXT_PUBLIC_NAVER_LEGACY_CLIENT_ID=기존_클라이언트_ID
-NAVER_LEGACY_CLIENT_ID=기존_클라이언트_ID
-NAVER_LEGACY_CLIENT_SECRET=기존_클라이언트_Secret
+NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID=신규_Client_ID
+NAVER_MAPS_CLIENT_ID=신규_Client_ID
+NAVER_MAPS_CLIENT_SECRET=신규_Client_Secret
+OPENAI_API_KEY=OpenAI_키
 ```
 
-**중요:** Secret을 `NEXT_PUBLIC_` 변수에 넣지 마세요. 키를 GitHub나 제출 문서에 기재하지 마세요.
+- 새 코드에는 구형 `NAVER_LEGACY_...` 환경변수를 사용하지 않습니다. 신규 지도 성공을 확인한 뒤 구형 키를 삭제하세요.
+- 새 환경변수 등록 후 GitHub 코드 업데이트와 Vercel 새 배포가 필요합니다.
+- 지도 API 호출은 사용자 브라우저가 아닌 Next.js 서버에서 수행하며, Secret은 공개되면 안 됩니다.
+- **지도 조회 검증:** 국내 도시 선택 → AI 여행 계획 생성 → `네이버지도 실제 경로 조회` 버튼 → 경로 시간/거리와 지도 표시.
+- **Agent 검증:** 국내 여행 계획을 AI 모드로 만들고 `get_driving_route`가 `실제 함수 실행`인지 로그에서 확인.
+- API 호출 실패 때는 이전/추정 시간으로 대체하지 않습니다.
+- 가격·영업시간·숙소·항공권·관광지 정보는 여전히 실시간 API가 아니라 실습용 값이거나 미조회입니다.
+- Directions 5는 자동차 기준이며 대중교통/도보 경로가 아닙니다.
 
-### 적용한 기술
+### 배포 전 점검
 
-- 웹 지도 SDK: `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=...`
-- 주소→좌표: `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode`
-- 자동차 경로: `https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving`
-- REST API 요청은 Next.js 서버에서만 수행합니다.
-- Agent `get_driving_route` 도구는 검증된 국내 관광지 ID 2개만 받아 API를 호출합니다.
-- 화면의 `네이버지도 실제 경로 조회` 버튼은 **첫날 오전·오후** 장소를 실제 조회해 지도/거리/시간으로 표시합니다.
-- 네이버 API 미설정/실패/서비스 종료 후에도 국내 관광지 데이터와 데모 일정은 이용할 수 있지만 지도 경로 기능은 실패로 표시됩니다.
-- 해외 관광지 지도는 제공하지 않습니다.
-- 네이버 지도 Directions 5는 **자동차 이동 기준**이며, 대중교통/도보 이동시간은 제공하지 않습니다.
+```bash
+npm install
+npm test
+npm run build
+git status
+git add .
+git commit -m "Switch TravelLoop to new NAVER Maps API"
+git push
+```
 
-### Vercel 배포
+기존 저장소 폴더를 열고 수정본 파일을 **그 폴더 안으로 복사**합니다. `.git`과 `.env.local`을 보존하고, `git status`에서 키 파일이 추적되지 않는지 확인하세요.
+Vercel에서 Production 환경변수 등록 후 최신 배포가 새 커밋을 사용하도록 배포하세요.
 
-1. 위 3개 `NAVER...` 환경변수에 실제 값을 입력합니다(Production).
-2. GitHub에 수정 파일을 푸시합니다. 환경변수 신규 등록은 재배포해야 적용됩니다.
-3. 국내 도시를 선택해 AI 모드로 계획을 생성합니다. OpenAI API 키가 없으면 데모 모드로 화면부터 테스트합니다.
-4. 국내 여행 일정을 생성한 뒤 `네이버지도 실제 경로 조회`를 누릅니다. 지도와 실제 거리·시간이 나오는지 확인합니다.
-5. AI 모드 도구 실행 로그의 `get_driving_route`가 성공한 경우에만 Agent의 외부 API 사용 성공을 입증할 수 있습니다. 버튼으로 호출한 경로는 별도 수동 검증 기능입니다.
-
-공식 참고: https://www.ncloud.com/support/notice/all/2200
-
-### 주의
-
-- 이번 실습에 들어간 관광지의 주소는 테스트 입력값이며, Geocoding 응답이 없으면 실제 지도를 표시하지 않습니다.
-- 실제 이동거리는 Directions 5 성공 응답에서만 표시합니다.
-- 지도 API 조회 비용이 발생할 수 있으니 사용량 한도를 설정하세요.
+공식 문서:
+- https://api.ncloud-docs.com/docs/application-maps-overview
+- https://api.ncloud-docs.com/docs/application-maps-directions5
+- https://api.ncloud-docs.com/docs/application-maps-geocoding
+- https://guide.ncloud-docs.com/docs/application-maps-troubleshoot

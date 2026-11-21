@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import {getDrivingRoute} from '../../../lib/naverLegacy.js';
+import {getDrivingRoute} from '../../../lib/naverMaps.js';
 export const runtime='nodejs';
 export async function POST(req){
  try {

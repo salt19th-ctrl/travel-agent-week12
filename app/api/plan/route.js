@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import {SPOTS,CITY_LABELS,DOMESTIC_CITIES,searchPlaces,estimateBudget,makeDemoPlan} from '../../../lib/tools.js';
-import {getDrivingRoute} from '../../../lib/naverLegacy.js';
+import {getDrivingRoute} from '../../../lib/naverMaps.js';
 
 export const runtime='nodejs';
 export const maxDuration=60;
@@ -11,7 +11,7 @@ const TOOLS=[
   parameters:{type:'object',properties:{city:{type:'string',enum:CITY_ENUM},focus:{type:'string'},indoorsOnly:{type:'boolean'},limit:{type:'integer'}},required:['city','focus','indoorsOnly','limit'],additionalProperties:false}},
  {type:'function',name:'estimate_budget',description:'가상 단가를 사용하여 여행 예산을 계산한다. 실제 항공권·호텔 요금이 아니다.',strict:true,
   parameters:{type:'object',properties:{city:{type:'string',enum:CITY_ENUM},days:{type:'integer'},travelers:{type:'integer'},budgetPerPerson:{type:'integer'},pace:{type:'string'}},required:['city','days','travelers','budgetPerPerson','pace'],additionalProperties:false}},
- {type:'function',name:'get_driving_route',description:'국내여행 관광지 2곳 사이 자동차 이동 거리와 시간을 실제 네이버 AI·NAVER API로 조회한다. 반드시 search_places가 반환한 ID를 사용한다. 지도 API 키가 없다면 호출 실패를 명확히 보고한다.',strict:true,parameters:{type:'object',properties:{fromId:{type:'string'},toId:{type:'string'}},required:['fromId','toId'],additionalProperties:false}}
+ {type:'function',name:'get_driving_route',description:'국내여행 관광지 2곳 사이 자동차 이동 거리와 시간을 실제 신규 NAVER Cloud Maps API로 조회한다. 반드시 search_places가 반환한 ID를 사용한다. 지도 API 키가 없다면 호출 실패를 명확히 보고한다.',strict:true,parameters:{type:'object',properties:{fromId:{type:'string'},toId:{type:'string'}},required:['fromId','toId'],additionalProperties:false}}
 ];
 const SYSTEM=`너는 대학 수업에서 구현하는 AI 여행 일정 설계 Agent이다.
 사용자 조건을 보고 다음 행동과 도구를 선택한다. 먼저 search_places 도구를 반드시 실행하고, estimate_budget 도구도 반드시 실행한다.
